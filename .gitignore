@@ -2,3 +2,4 @@
 /backend_env
 *.env
 *.venv
+*pycache*
