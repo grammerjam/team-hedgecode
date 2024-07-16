@@ -3,56 +3,20 @@ from pydantic import BaseModel, Field, BeforeValidator, ConfigDict
 from typing import List, Optional, Annotated
 
 
-class TrendingThumbnails(BaseModel):
-    """
-    Container for the TRENDING thumbnail URLs.
-    """
-    model_config = ConfigDict(from_attributes=True)
-    
-    # Basic fields
-    small: str = Field(description="The URL to the SMALL trending photo.")
-    large: str = Field(description="The URL to the LARGE trending photo.")
-
-class RegularThumbnails(BaseModel):
-    """
-    Container for the REGULAR thumbnail URLs.
-    """
-    model_config = ConfigDict(from_attributes=True)
-
-    # Basic fields
-    small: str = Field(description="The URL to the SMALL regular photo.")
-    medium: str = Field(description="The URL to the MEDIUM regular photo.")
-    large: str = Field(description="The URL to the LARGE regular photo.")
-
-
 class Thumbnail(BaseModel):
     """
     Container for the Thumbnail URLs.
     """
     model_config = ConfigDict(from_attributes=True)
 
-    # Declare the trending and regular as RegularThumbnails and TrendingThumbnails items
-    regular: RegularThumbnails
-    # can be empty
-    trending: Optional[TrendingThumbnails] = None
-    
+    size: str = Field(description="The size of the thumbnail. Small, Medium, Large.")
+    url: str = Field(description="The thumbnail URL.")
+    category: str = Field(description="The category of the thumbnail. Regular or Trending?")
+
 
 # Represents an ObjectId field in the database.
 # It will be represented as a `str` on the model so that it can be serialized to JSON.
 PyObjectId = Annotated[str, BeforeValidator(str)]
-
-class EntertainmentPublicSettings(BaseModel):
-    """
-    Container for the relationships between the entertainment piece and it's trending attribute. One could put more here, but matching the data.json
-
-    This is prone to change, so it's separated from the entertainment piece.
-    """
-
-    model_config = ConfigDict(from_attributes=True)
-
-    # Basic fields
-    isTrending: bool = Field(default= False,description="Whether the entertainment media is trending or not")
-
 
 class EntertainmentMedia(BaseModel):
     """
@@ -69,28 +33,31 @@ class EntertainmentMedia(BaseModel):
     year: int = Field(description="The year this entertainment piece was released.")
     category: str = Field(description="Whether the entertainment piece is a MOVIE or TELEVISION SERIES.")
 
-    public_entertainment_settings: EntertainmentPublicSettings = Field(description="Is the entertainment piece trending?")
+    url: str = Field(description="The URL of the entertainment media.")
+    rating: str = Field(description="The entertainments rating")
+    isTrending: bool = Field(default= False,description="Whether the entertainment media is trending or not")
+    regular_thumbnail: List[Thumbnail]
+    trending_thumbnail: Optional[List[Thumbnail]] = None
+    
 
     model_config = ConfigDict(
         populate_by_name = True,
         json_schema_extra = {
             "example": {
-                "title": "Beyond Earth",
-                "thumbnail": {
-                    "trending": {
-                                    "small": "./assets/thumbnails/beyond-earth/trending/small.jpg",
-                                    "large": "./assets/thumbnails/beyond-earth/trending/large.jpg"
-                                },
-                    "regular": {
-                                    "small": "./assets/thumbnails/beyond-earth/regular/small.jpg",
-                                    "medium": "./assets/thumbnails/beyond-earth/regular/medium.jpg",
-                                    "large": "./assets/thumbnails/beyond-earth/regular/large.jpg"
-                                }
-                },
-               "year": 2019,
-                "category": "Movie",
-                "rating": "PG",
-                "public_entertainment_settings": { 'isTrending' : True }
+            "title": "Beyond Earth",
+            "trending_thumbnail": {
+                            "small": "./assets/thumbnails/beyond-earth/trending/small.jpg",
+                            "large": "./assets/thumbnails/beyond-earth/trending/large.jpg"
+                        },
+            "regular_thumbnail": {
+                            "small": "./assets/thumbnails/beyond-earth/regular/small.jpg",
+                            "medium": "./assets/thumbnails/beyond-earth/regular/medium.jpg",
+                            "large": "./assets/thumbnails/beyond-earth/regular/large.jpg"
+            },
+            "year": 2019,
+            "category": "Movie",
+            "rating": "PG",
+            'isTrending' : True 
             }
         }
         )

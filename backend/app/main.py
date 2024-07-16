@@ -52,8 +52,11 @@ async def main_function():
     return RedirectResponse(url="/docs/")
 
 
+"""
+Simple post method to add an entertainmentMedia.
+"""
 @app.post("/entertainment/media/")
-async def create_entertainment_media(entertainment_media: entertainment.EntertainmentMedia) -> EntertainmentMedia:
+async def create_entertainment_media(entertainment_media: EntertainmentMedia) -> EntertainmentMedia:
     db = await get_database()
     if db is not None:
         new_entertainment_media = await add_entertainment_media(entertainment_media, db)
@@ -65,6 +68,9 @@ async def create_entertainment_media(entertainment_media: entertainment.Entertai
     else:
         raise HTTPException(status_code=500, detail="Failed to create item")
 
+"""
+Route to get movies
+"""
 @app.get("/movies")
 async def all_movies() -> EntertainmentCollection:
     db = await get_database()
