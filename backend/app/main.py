@@ -36,10 +36,10 @@ async def main_function():
     return RedirectResponse(url="/docs/")
 
 
-if __name__ == "__main__":
-    uvicorn.run(
-        "main:app",
-        host=settings.HOST,
-        reload=settings.DEBUG_MODE,
-        port=settings.PORT,
-    )
+# if __name__ == "__main__":
+#     uvicorn.run(
+#         "main:app",
+#         host=settings.HOST,
+#         reload=settings.DEBUG_MODE,
+#         port=settings.PORT,
+#     )
