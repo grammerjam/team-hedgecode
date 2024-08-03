@@ -1,38 +1,35 @@
-from fastapi import FastAPI, Depends, HTTPException
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from config import settings
 from starlette.responses import RedirectResponse
 from motor.motor_asyncio import AsyncIOMotorClient
+import uvicorn # NOTE: used in main
 
-from schemas import entertainment
-from contextlib import asynccontextmanager
-from database import *
-
-import uvicorn
-
-app = FastAPI(
-    title = settings.APP_NAME,
-    version = settings.VERSION
-)
-
+from config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Establish the database connection
-    global db_client
-    db_client = await settings.initiate_database()
+    # Connect to MongoDB before serving requests
+    app.mongodb_client = AsyncIOMotorClient(settings.DB_URI)
+    app.mongodb = app.mongodb_client[settings.DB_NAME]
     yield
-    # Close the database connection
-    if db_client:
-        db_client.close()
 
-app = FastAPI(lifespan=lifespan)
+    # Close MongoDB connection after serving requests
+    app.mongodb_client.close()
 
 async def get_database():
-    if db_client is None:
-        raise RuntimeError("Database client not initialized")
-    return db_client[settings.DB_NAME]
+    try:
+        return app.mongodb
+    except RuntimeError as e:
+        raise RuntimeError(f"Database client not initialized: {e}")
+    except Exception as e:
+        raise Exception(f"Error during database initiation: {e}")
 
+app = FastAPI(
+    title = settings.APP_NAME,
+    version = settings.VERSION,
+    lifespan=lifespan
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,38 +49,10 @@ async def main_function():
     return RedirectResponse(url="/docs/")
 
 
-@app.post("/entertainment/media/")
-async def create_entertainment_media(entertainment_media: entertainment.EntertainmentMedia) -> EntertainmentMedia:
-    db = await get_database()
-    if db is not None:
-        new_entertainment_media = await add_entertainment_media(entertainment_media, db)
-    else:
-        raise HTTPException(status_code=500, detail="Database connection failed")
-
-    if new_entertainment_media:
-       return new_entertainment_media
-    else:
-        raise HTTPException(status_code=500, detail="Failed to create item")
-
-@app.get("/movies")
-async def all_movies() -> EntertainmentCollection:
-    db = await get_database()
-    if db is not None:
-        all_movies = await get_all_movies(db)
-    else:
-        raise HTTPException(status_code=500, detail="Database connection failed")
-    
-    if all_movies is not None:
-        return EntertainmentCollection(movies=all_movies)
-    else:
-        raise HTTPException(status_code=404, detail="Failed to find movies")
-
-
-
-if __name__ == "__main__":
-    uvicorn.run(
-        "main:app",
-        host=settings.HOST,
-        reload=settings.DEBUG_MODE,
-        port=settings.PORT,
-    )
+# if __name__ == "__main__":
+#     uvicorn.run(
+#         "main:app",
+#         host=settings.HOST,
+#         reload=settings.DEBUG_MODE,
+#         port=settings.PORT,
+#     )
