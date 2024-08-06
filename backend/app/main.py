@@ -1,22 +1,35 @@
-from fastapi import FastAPI, Depends
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from config import settings
 from starlette.responses import RedirectResponse
 from motor.motor_asyncio import AsyncIOMotorClient
-import uvicorn
+import uvicorn # NOTE: used in main
+
+from config import settings
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Connect to MongoDB before serving requests
+    app.mongodb_client = AsyncIOMotorClient(settings.DB_URI)
+    app.mongodb = app.mongodb_client[settings.DB_NAME]
+    yield
+
+    # Close MongoDB connection after serving requests
+    app.mongodb_client.close()
+
+async def get_database():
+    try:
+        return app.mongodb
+    except RuntimeError as e:
+        raise RuntimeError(f"Database client not initialized: {e}")
+    except Exception as e:
+        raise Exception(f"Error during database initiation: {e}")
 
 app = FastAPI(
     title = settings.APP_NAME,
-    version = settings.VERSION
+    version = settings.VERSION,
+    lifespan=lifespan
 )
-
-async def get_database():
-    client = AsyncIOMotorClient(settings.DB_URI)
-    try:
-        db = client[settings.DB_NAME]
-        yield db
-    finally:
-        client.close()
 
 app.add_middleware(
     CORSMiddleware,

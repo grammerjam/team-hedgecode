@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from motor.motor_asyncio import AsyncIOMotorClient
 
 class CommonSettings(BaseSettings):
     APP_NAME: str = "NTFX_APP"
@@ -19,7 +20,12 @@ class DatabaseSettings(BaseSettings):
 
 
 class Settings(CommonSettings, ServerSettings, DatabaseSettings):
-    pass
+    async def initiate_database(self):
+        client = AsyncIOMotorClient(self.DB_URI)
+        return client
 
 
 settings = Settings()
+
+
+
